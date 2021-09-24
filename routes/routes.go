@@ -1,9 +1,12 @@
 package routes
 
-import "github.com/gorilla/mux"
+import (
+	"github.com/Diegoplas/go-bootcamp-deliverable/controllers"
+	"github.com/gorilla/mux"
+)
 
-func getRouter() (router *mux.Router) {
+func GetRouter() (router *mux.Router) {
 	router = mux.NewRouter()
-	router.HandleFunc("/pokedex/{pokemon_id}", getPokemon).Methods("GET")
-	return router
+	router.HandleFunc("/pokedex/{pokemon_id}", controllers.GetPokemon).Methods("GET")
+	return
 }

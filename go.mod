@@ -1,4 +1,4 @@
-module github.com/Diegoplas/GoBootcampDeliverable
+module github.com/Diegoplas/go-bootcamp-deliverable
 
 go 1.17
 
