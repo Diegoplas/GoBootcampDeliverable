@@ -1,13 +1,5 @@
 package main
 
-// Dudas----------------------------------------
-//   Go mod e init
-//   Acomodo de carpetas
-//   Directorio de 0
-// 	 regresar como mapa o string con formato
-//   Como agregar name Y ID
-//   Usar ID como string o como int???
-
 import (
 	"encoding/csv"
 	"fmt"
@@ -18,14 +10,15 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/unrolled/render"
 )
 
 type PokemonData struct {
-	ID        int
-	Name      string
-	Type1     string
-	Type2     string
-	Legendary bool
+	ID        int    `json:"id"`
+	Name      string `json:"name"`
+	Type1     string `json:"type_1"`
+	Type2     string `json:"type_2"`
+	Legendary bool   `json:"legendary"`
 }
 
 func main() {
@@ -36,33 +29,27 @@ func main() {
 
 func getRouter() (router *mux.Router) {
 	router = mux.NewRouter()
-	router.HandleFunc("/pokedex/{wanted_pokemon}", getPokemon).Methods("GET")
+	router.HandleFunc("/pokedex/{pokemon_id}", getPokemon).Methods("GET")
 	return router
 }
 
 func getPokemon(w http.ResponseWriter, r *http.Request) {
-	wantedIndex := ""
-	formatedResponse := "No pokemon found!"
-	pokeData := PokemonData{}
-	wantedIndex = mux.Vars(r)["wanted_pokemon"]
-	fmt.Println(wantedIndex)
-	if wantedIndex == "" {
-		http.Error(w, "missing parameter pokemon Name or ID", http.StatusBadRequest)
+
+	requestedIndex := mux.Vars(r)["pokemon_id"]
+
+	wantedIndex, _ := strconv.Atoi(requestedIndex)
+
+	if wantedIndex < 1 || wantedIndex > 151 {
+		http.Error(w, "Please introduce a valid pokemon ID from first gen. (1-151)", http.StatusBadRequest)
+		return
 	}
 
-	pokeData = csvReader(wantedIndex)
+	response := csvReader(wantedIndex)
 
-	if pokeData.Type2 != "" {
-		formatedResponse = fmt.Sprintf("ID: %v Name: %s, Type1: %s, Type2: %s, Legendary: %t",
-			pokeData.ID, pokeData.Name, pokeData.Type1, pokeData.Type2, pokeData.Legendary)
-	} else {
-		formatedResponse = fmt.Sprintf("ID: %v Name: %s, Type1: %s, Legendary: %t",
-			pokeData.ID, pokeData.Name, pokeData.Type1, pokeData.Legendary)
-	}
-	w.Write([]byte(formatedResponse))
+	render.New().JSON(w, http.StatusOK, &response)
 }
 
-func csvReader(index string) PokemonData {
+func csvReader(index int) PokemonData {
 
 	// open the file
 	csvFile, err := os.Open("./pokedex.csv")
@@ -77,20 +64,23 @@ func csvReader(index string) PokemonData {
 		fmt.Printf("error encountered opening csv file: %v", err.Error())
 	}
 
-	legendary := false
-
 	for _, line := range csvLines {
 
-		if line[0] == index {
+		pokemonID, _ := strconv.Atoi(line[0])
+
+		if pokemonID == index {
+
+			if line[3] == "" {
+				line[3] = " - "
+			}
+
+			legendary := false
 			if line[4] == "TRUE" {
 				legendary = true
 			}
-			intID, err := strconv.Atoi(line[0])
-			if err != nil {
-				fmt.Printf("error converting id to int: %v", err.Error())
-			}
+
 			pokemon := PokemonData{
-				intID,
+				pokemonID,
 				line[1],
 				line[2],
 				line[3],
